@@ -481,8 +481,8 @@ struct rlslp {
             }
         }
 	if (copy_i < new_text_size) {
-            t[copy_i] = t[text_size-1];
-        }
+        t[copy_i] = t[text_size-1];
+    }
         const auto endTimeBlock = std::chrono::system_clock::now();
         const auto timeSpanBlock = endTimeBlock - startTimeBlock;
         std::cout << "Time for finding blocks: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpanBlock).count() << "[ms]"  << std::endl;
@@ -679,15 +679,21 @@ inline std::vector<bool> compute_partition(const std::map<std::pair<variable_t, 
  * @param multiset[in] Multiset representing the adjacency graph of the text
  * @param partition[in,out] The partition of the letters in the current alphabet represented by a bitvector
  */
-inline void count_pairs(const std::vector<multiset_t>& multiset, std::vector<bool>& partition) {
+inline void count_pairs(const std::map<std::pair<variable_t, variable_t>, std::pair<size_t, size_t>>& multiset, std::vector<bool>& partition) {
     const auto startTime = std::chrono::system_clock::now();
     int lr_count = 0;
     int rl_count = 0;
     for (const auto &adj : multiset) {
-        const auto &adj_0 = std::get<0>(adj);
-        const auto &adj_1 = std::get<1>(adj);
-        if (std::get<2>(adj)) {  // (c,b,1) -> bc in text
-            if (!partition[adj_0] && partition[adj_1]) {  // case c in left set and b in right set
+        //const auto &adj_0 = std::get<0>(adj);
+        //const auto &adj_1 = std::get<1>(adj);
+        if (!partition[adj.first.first] && partition[adj.first.second]) {  // (c,b,0) -> cb in text
+            lr_count += adj.second.first;
+            rl_count += adj.second.second;
+        } else {
+            rl_count += adj.second.first;
+            lr_count += adj.second.second;
+        }
+            /*if (!partition[adj_0] && partition[adj_1]) {  // case c in left set and b in right set
                 rl_count++;
             } else if (partition[adj_0] && !partition[adj_1]) {  // case c in right set and b in left set
                 lr_count++;
@@ -698,7 +704,7 @@ inline void count_pairs(const std::vector<multiset_t>& multiset, std::vector<boo
             } else if (partition[adj_0] && !partition[adj_1]) {  // case c in right set and b in left set
                 rl_count++;
             }
-        }
+        }*/
     }
 
     // If there are more pairs in the current text from right set to left set swap partition sets
@@ -745,7 +751,7 @@ inline std::vector<bool> partition(const text_t& t, size_t& text_size, const var
 
     // Count pairs in the current text based on the pairs build by the partition
     // from left set to right set and vice versa
-    //count_pairs(multiset, partition);
+    count_pairs(multiset, partition);
 
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
@@ -806,6 +812,16 @@ inline std::vector<bool> partition(const text_t& t, size_t& text_size, const var
         size_t copy_i = 0;
         bool copy = false;
         std::cout << "Alphabet: " << alphabet_size << std::endl;
+        if (text_size == 2) {
+            for (const auto& b : part) {
+                std::cout << b;
+            }
+            std::cout << std::endl;
+            for (size_t i = 0; i < text_size; ++i) {
+                std::cout << t[i] << " ";
+            }
+            std::cout << std::endl;
+        }
         for (size_t i = 1; i < text_size; ++i, ++copy_i) {
             if (!part[t[i-1]] && part[t[i]]) {
 //                std::cout << "Pair found: " << t[i-1] << "," << t[i] << std::endl;
@@ -825,11 +841,14 @@ inline std::vector<bool> partition(const text_t& t, size_t& text_size, const var
                 t[copy_i] = t[i-1];
             }
         }
+        if (copy_i < new_text_size) {
+            t[copy_i] = t[text_size-1];
+        }
         std::cout << "All pairs computed" << std::endl;
 
         text_size = new_text_size;
 
-//        std::cout << "Text size: " << text_size << std::endl;
+        std::cout << "PComp text size: " << text_size << std::endl;
 //        std::cout << "    : ";
 //        for (size_t i = 0; i < text_size; i++) {
 //            if (i < 10) {
