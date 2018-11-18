@@ -1,13 +1,13 @@
 CXX = g++
-CXXFLAGS = -std=c++1z -Ofast -DNODEBUG -W -Wall -Wno-deprecated
+CXXFLAGS = -std=c++14 -O3 -DNODEBUG -W -Wall -Wno-deprecated -ftree-vectorize -march=native
 LINKFLAGS = -lm
 
-all: recompression_pos
+all: recomp
 
-recompression_pos: recompression.cpp
-	$(CXX) $(CXXFLAGS) $(OTHERFLAGS) recompression.cpp -o recompression_pos
+recomp: rlslp.cpp recompression.cpp
+	$(CXX) $(CXXFLAGS) $(OTHERFLAGS) rlslp.cpp recompression.cpp -o recomp
 
 clean:
-	rm -f recompression_pos *.o *~
+	rm -f recomp *.o *~
 
 
