@@ -39,11 +39,11 @@
 
 namespace lce {
 
-typedef unsigned int variable_t;
+typedef std::int32_t variable_t;
 typedef std::uint32_t terminal_count_t;
 typedef std::vector<variable_t> text_t;
-typedef std::list<variable_t>::iterator iterator_t;
-typedef std::tuple<variable_t, variable_t, iterator_t> triple_t;
+//typedef std::list<variable_t>::iterator iterator_t;
+//typedef std::tuple<variable_t, variable_t, iterator_t> triple_t;
 typedef std::tuple<variable_t, variable_t, bool> multiset_t;
 
 //template<typename T, typename V>
@@ -192,10 +192,10 @@ void replace_letters(text_t &t, rlslp& rlslp, variable_t& alphabet_size, std::ve
         rlslp.non_terminals.emplace_back(a.first, 1);
     }
 
-    rlslp.blocks.resize(alpha.size());
+    /*rlslp.blocks.resize(alpha.size());
     for (size_t j = 0; j < rlslp.blocks.size(); ++j) {
         rlslp.blocks[j] = false;
-    }
+    }*/
     alphabet_size = alpha.size();
     rlslp.terminals = alphabet_size;
 
@@ -263,7 +263,7 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
             for (auto& block : blocks[i]) {
                 block.second = alphabet_size++;
                 block_count++;
-                rlslp.non_terminals.emplace_back(mapping[i], block.first, rlslp.non_terminals[mapping[i]].len * block.first);
+                rlslp.non_terminals.emplace_back(mapping[i], -block.first, rlslp.non_terminals[mapping[i]].len * block.first);
                 mapping.emplace_back(next_nt++);
             }
         }
@@ -284,9 +284,9 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
     t.resize(new_text_size);
     t.shrink_to_fit();
 
-    if (block_count > 0) {
+    /*if (block_count > 0) {
         rlslp.blocks.resize(rlslp.blocks.size() + block_count, true);
-    }
+    }*/
 
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
@@ -525,9 +525,9 @@ void pcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
 
     std::cout << "Replaced all pairs" << std::endl;
 
-    if (pair_count > 0) {
+    /*if (pair_count > 0) {
         rlslp.blocks.resize(rlslp.blocks.size() + pair_count, false);
-    }
+    }*/
 
     // Introduce new non-terminals for all found pairs
     const auto endTime = std::chrono::system_clock::now();
@@ -617,7 +617,7 @@ void extract(const size_t i, const size_t len, const variable_t nt, text_t& s, r
             auto second = rlslp.non_terminals[nt].production[1];
             auto first_len = rlslp.non_terminals[first].len;
 
-            if (rlslp.blocks[nt]) {
+            if (second < 0/*rlslp.blocks[nt]*/) {
                 auto block_len = first_len;
                 size_t idx = 0;
                 // Compute correct position inside the block
@@ -680,7 +680,7 @@ inline void subtree(rlslp& rlslp, size_t& pos, variable_t& nt) {
         auto right = rlslp.non_terminals[nt].production[1];
         auto len = rlslp.non_terminals[left].len;
 
-        if (rlslp.blocks[nt]) {
+        if (right < 0/*rlslp.blocks[nt]*/) {
             auto block_len = 0;
             while (block_len + len <= pos) {
                 block_len += len;
@@ -844,7 +844,7 @@ size_t lcequery(rlslp&/*<variable_t, terminal_count_t>&*/ rlslp,
             s_len.push_back(len + s_len[s_len.size()-1]);
         }
         return len + find_next_nt(rlslp, i, j, i_nt, j_nt, s_len, traverse + 1, i_nts, j_nts);
-    } else if (rlslp.blocks[nt_i] && rlslp.blocks[nt_j] &&
+    } else if (rlslp.non_terminals[nt_i].production[1] < 0 && rlslp.non_terminals[nt_j].production[1] < 0 && /*rlslp.blocks[nt_i] && rlslp.blocks[nt_j] &&*/
                rlslp.non_terminals[nt_i].production[0] == rlslp.non_terminals[nt_j].production[0] &&
                pos_i % rlslp.non_terminals[rlslp.non_terminals[nt_i].production[0]].len ==
                pos_j % rlslp.non_terminals[rlslp.non_terminals[nt_i].production[0]].len) {
@@ -998,8 +998,8 @@ size_t lcequery(rlslp& rlslp, const size_t i, const size_t j) {
     }
 
     variable_t size = rlslp.non_terminals.size();
-    std::vector<lceq> i_non_terms(size, lceq{size, size, 0});
-    std::vector<lceq> j_non_terms(size, lceq{size, size, 0});
+    std::vector<lceq> i_non_terms(size, lceq{size, (size_t)size, 0});
+    std::vector<lceq> j_non_terms(size, lceq{size, (size_t)size, 0});
     i_non_terms[nt_root].nt = nt_root;
     j_non_terms[nt_root].nt = nt_root;
     i_non_terms[nt_root].pos = i;
@@ -1038,6 +1038,82 @@ void read_file(const std::string& file_name, std::string& text, bool term) {
     ifs.close();
     std::cout << "Read " << file_size << " bytes" << std::endl;
     std::cout << "Finished reading file" << std::endl;
+}
+
+void write_to_file(const std::string& file_name, rlslp& rlslp) {
+    std::cout << "Wrinting to file " << file_name << ".rcmp" << std::endl;
+    std::ofstream ofs(file_name + ".rcmp", std::ios::out | std::ios::binary);
+    lce::terminal_count_t terms = rlslp.terminals;
+    size_t size = rlslp.non_terminals.size();
+    ofs.write((char*)&terms, sizeof(lce::terminal_count_t));
+    ofs.write((char*)&size, sizeof(size_t));
+    size_t i = 0;
+    char term;
+    while (i < terms) {
+        term = (char)rlslp.non_terminals[i++].production[0];
+        ofs.write(&term, sizeof(char));
+    }
+    for (; i < rlslp.non_terminals.size(); ++i) {
+        ofs.write((char*)&rlslp.non_terminals[i].production[0], sizeof(lce::variable_t));
+        ofs.write((char*)&rlslp.non_terminals[i].production[1], sizeof(lce::variable_t));
+//        ofs << factors[i].first << factors[i].second;
+    }
+    ofs.close();
+    std::cout << "Finished writing file" << std::endl;
+}
+
+void load_from_file(const std::string& file_name, rlslp& rlslp) {
+    std::cout << "Reading file " << file_name << ".rcmp" << std::endl;
+    std::ifstream istream(file_name + ".rcmp", std::ios::in | std::ios::binary);
+    lce::terminal_count_t terms;
+    size_t size;
+    istream.read((char*)&terms, sizeof(lce::terminal_count_t));
+    istream.read((char*)&size, sizeof(size_t));
+    rlslp.terminals = terms;
+    rlslp.non_terminals.resize(size);
+    size_t i = 0;
+    lce::variable_t var;
+    char term;
+    while (i < terms) {
+        istream.read(&term, sizeof(char));
+        rlslp.non_terminals[i++].production.emplace_back((lce::variable_t)((unsigned char)term));
+    }
+    for (; i < size; ++i) {
+        istream.read((char*)&var, sizeof(lce::variable_t));
+        rlslp.non_terminals[i].production.emplace_back(var);
+        istream.read((char*)&var, sizeof(lce::variable_t));
+        rlslp.non_terminals[i].production.emplace_back(var);
+    }
+    istream.close();
+    std::cout << "Finished reading file" << std::endl;
+}
+
+bool equal(const rlslp& exp_rlslp, const rlslp& chck_rlslp) {
+    if (exp_rlslp.terminals != chck_rlslp.terminals) {
+        std::cerr << "Terminals not equal" << std::endl;
+        return false;
+    }
+    if (exp_rlslp.non_terminals.size() != chck_rlslp.non_terminals.size()) {
+        std::cerr << "Number of non-terminals not equal" << std::endl;
+        return false;
+    }
+    size_t i = 0;
+    while (i < exp_rlslp.terminals) {
+        if (exp_rlslp.non_terminals[i].production[0] != chck_rlslp.non_terminals[i].production[0]) {
+            std::cerr << "Wrong terminal" << std::endl;
+            return false;
+        }
+        i++;
+    }
+
+    for (; i < exp_rlslp.non_terminals.size(); ++i) {
+        if (exp_rlslp.non_terminals[i].production[0] != chck_rlslp.non_terminals[i].production[0] ||
+                exp_rlslp.non_terminals[i].production[1] != chck_rlslp.non_terminals[i].production[1]) {
+            std::cerr << "Wrong non-terminal" << std::endl;
+            return false;
+        }
+    }
+    return true;
 }
 
 int main(int argc, char** argv) {
@@ -1079,6 +1155,17 @@ int main(int argc, char** argv) {
             std::cerr << "Decompression failed." << std::endl;
         }
     }*/
+
+    write_to_file(filename, slp);
+
+    rlslp load_slp;
+    load_from_file(filename, load_slp);
+
+    if (equal(slp, load_slp)) {
+        std::cout << "RLSLP correctly stored and loaded." << std::endl;
+    } else {
+        std::cerr << "Storing and loading failed." << std::endl;
+    }
 
     return 0;
 }

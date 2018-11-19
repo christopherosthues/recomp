@@ -22,7 +22,7 @@
 
 //template<typename V = size_t, typename T = std::uint32_t>
 struct rlslp {
-    typedef size_t variable_t;
+    typedef std::int32_t variable_t;
     typedef std::uint32_t terminal_count_t;
 //    typedef V variable_t;
 //    typedef T terminal_count_t;
@@ -33,6 +33,8 @@ struct rlslp {
         
         // Derivation rule of the non-terminal
         std::vector<variable_t> production;
+        
+        non_terminal();
 
         non_terminal(variable_t term, size_t len);
 
@@ -47,7 +49,7 @@ struct rlslp {
     std::vector<non_terminal> non_terminals;
     
     // Bitvector to indicate whether a derivation rule of the non-terminal given by its index is a block
-    std::vector<bool> blocks;
+    //std::vector<bool> blocks;
     //sdsl::bit_vector blocks;
     
     // The number of terminals (terminals - 1 is the last production which derives a terminal)

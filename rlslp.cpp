@@ -19,14 +19,20 @@
 #include <iostream>
 #include <sstream>
 
-rlslp::non_terminal::non_terminal(variable_t term, size_t len) {
-    this->production.emplace_back(term);
+rlslp::non_terminal::non_terminal() = default;
+
+rlslp::non_terminal::non_terminal(variable_t term, size_t len) : production(1) {
+    this->production[0] = term;//.emplace_back(term);
+    //this->production.resize(1);
+    //this->production.shrink_to_fit();
     this->len = len;
 }
 
-rlslp::non_terminal::non_terminal(variable_t first, variable_t second, size_t len) {
-    this->production.emplace_back(first);
-    this->production.emplace_back(second);
+rlslp::non_terminal::non_terminal(variable_t first, variable_t second, size_t len) : production(2) {
+    this->production[0] = first;//.emplace_back(first);
+    this->production[1] = second;//.emplace_back(second);
+    //this->production.resize(2);
+    //this->production.shrink_to_fit();
     this->len = len;
 }
 
@@ -43,10 +49,10 @@ std::string rlslp::non_terminal::to_string() const {
 std::string rlslp::to_string() const {
     std::stringstream sstream;
     sstream << "Number of terminals: " << terminals << std::endl;
-    sstream << "Blocks: ";
+    /*sstream << "Blocks: ";
     for (const auto& b : blocks) {
         std::cout << b << std::endl;
-    }
+    }*/
     sstream << "Non-terminals: " << std::endl;
     size_t i = 0;
     for (const auto& nt : non_terminals) {
