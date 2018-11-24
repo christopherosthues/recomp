@@ -95,7 +95,7 @@ long radix_sort(std::vector<multiset_t> &vec) {
     }
     const auto endTime = std::chrono::system_clock::now();
         const auto timeSpan = endTime - startTime;
-        std::cout << "Time for radix sort triple: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+        std::cout << "Time for radix sort triple: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 	return std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count();
 }
 
@@ -133,7 +133,7 @@ const auto startTime = std::chrono::system_clock::now();
     }
 const auto endTime = std::chrono::system_clock::now();
         const auto timeSpan = endTime - startTime;
-        std::cout << "Time for tuple: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+        std::cout << "Time for tuple: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 	return std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count();
 }*/
 
@@ -204,7 +204,7 @@ void replace_letters(text_t &t, rlslp& rlslp, variable_t& alphabet_size, std::ve
     }
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for replace letters: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for replace letters: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 }
 
 /**
@@ -215,6 +215,7 @@ void replace_letters(text_t &t, rlslp& rlslp, variable_t& alphabet_size, std::ve
  * @param mapping[in,out] The mapping of the symbols in the text to the non-terminal
  */
 void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size,std::vector<variable_t>& mapping) {
+    std::cout << "Text size (Input BComp): " << text_size << std::endl;
     const auto startTime = std::chrono::system_clock::now();
     variable_t next_nt = rlslp.non_terminals.size();
     std::vector<bool> block_vec(alphabet_size);
@@ -253,7 +254,7 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
     }
     const auto endTimeBlock = std::chrono::system_clock::now();
     const auto timeSpanBlock = endTimeBlock - startTimeBlock;
-    std::cout << "Time for finding blocks: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpanBlock).count() << "[ms]"  << std::endl;
+    std::cout << "Time for finding blocks: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpanBlock).count() << "[ms]" << std::endl;
 
     block_count = 0;
 
@@ -270,7 +271,7 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
     }
     const auto endTimeAss = std::chrono::system_clock::now();
     const auto timeSpanAss = endTimeAss - startTimeAss;
-    std::cout << "Time for block nts: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpanAss).count() << "[ms]"  << std::endl;
+    std::cout << "Time for block nts: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpanAss).count() << "[ms]" << std::endl;
 
 
     const auto startTimeRep = std::chrono::system_clock::now();
@@ -280,7 +281,7 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
     }
     const auto endTimeRep = std::chrono::system_clock::now();
     const auto timeSpanRep = endTimeRep - startTimeRep;
-    std::cout << "Time for replacing blocks: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpanRep).count() << "[ms]"  << std::endl;
+    std::cout << "Time for replacing blocks: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpanRep).count() << "[ms]" << std::endl;
     t.resize(new_text_size);
     t.shrink_to_fit();
 
@@ -290,7 +291,8 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
 
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for bcomp: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for bcomp: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
+    std::cout << "Text size (Ouput BComp): " << text_size << std::endl;
 }
 
 
@@ -332,7 +334,7 @@ inline void compute_multiset(const text_t& t, size_t& text_size, std::map<std::p
 
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for multiset: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for multiset: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 }
 
 /**
@@ -345,8 +347,8 @@ inline void compute_multiset(const text_t& t, size_t& text_size, std::map<std::p
  */
 inline void compute_partition(const std::map<std::pair<variable_t, variable_t>, std::pair<size_t, size_t>>& multiset, std::vector<bool>& partition, const variable_t& alphabet_size) {
     const auto startTime = std::chrono::system_clock::now();
-    int lr_count = 0;
-    int rl_count = 0;
+    //int lr_count = 0;
+    //int rl_count = 0;
     variable_t c = 0;
     int left = 0, right = 0;
     for (const auto& adj : multiset) {
@@ -370,14 +372,14 @@ inline void compute_partition(const std::map<std::pair<variable_t, variable_t>, 
         left = 0;
         right = 0;
     }
-
-    if (rl_count > lr_count) {
+    
+    /*if (rl_count > lr_count) {
         partition.flip();
-    }
+    }*/
 
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for computing partition: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for computing partition: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 }
 
 /**
@@ -411,7 +413,7 @@ inline void count_pairs(const std::map<std::pair<variable_t, variable_t>, std::p
     }
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for count pairs: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for count pairs: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 }
 
 /**
@@ -449,7 +451,7 @@ inline void partition(const text_t& t, size_t& text_size, const variable_t& alph
 
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for partition: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for partition: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 }
 
 /**
@@ -460,11 +462,11 @@ inline void partition(const text_t& t, size_t& text_size, const variable_t& alph
  * @param mapping[in,out] The mapping of the symbols in the text to the non-terminal
  */
 void pcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size, std::vector<variable_t>& mapping) {
+    std::cout << "Text size (Input PComp): " << text_size << std::endl;
     const auto startTime = std::chrono::system_clock::now();
     std::vector<bool> part(alphabet_size, false);
     partition(t, text_size, alphabet_size, part);
 
-    std::cout << "Text size: " << text_size << std::endl;
 
     variable_t next_nt = rlslp.non_terminals.size();
     size_t pair_count = 0;
@@ -506,8 +508,6 @@ void pcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
 
     text_size = new_text_size;
 
-    std::cout << "PComp text size: " << text_size << std::endl;
-
     size_t alpha_size = alphabet_size;
     for (size_t i = 0; i < alpha_size; ++i) {
         if (!part[i]) {
@@ -532,7 +532,9 @@ void pcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
     // Introduce new non-terminals for all found pairs
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for pcomp: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for pcomp: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
+    
+    std::cout << "Text size (Ouput PComp): " << text_size << std::endl;
 }
 
 
@@ -581,7 +583,7 @@ void compute_alphabet(text_t& t, size_t& text_size, variable_t &alphabet_size, s
     }
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
-    std::cout << "Time for alphabet: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]"  << std::endl;
+    std::cout << "Time for alphabet: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 }
 
 /**
@@ -1142,7 +1144,7 @@ int main(int argc, char** argv) {
     std::cerr << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
     std::cerr << "rlslp size: " << slp.non_terminals.size() << std::endl;
 
-    /*{ //// Checking correctness.
+    { //// Checking correctness.
         std::cerr << "Checking if rlslp can be decompressed correctly..." << std::endl;
         std::string decomp_str;
         std::vector<lce::variable_t> dec = lce::extract(slp, 0, str.size());
@@ -1154,9 +1156,9 @@ int main(int argc, char** argv) {
         } else {
             std::cerr << "Decompression failed." << std::endl;
         }
-    }*/
+    }
 
-    write_to_file(filename, slp);
+    /*write_to_file(filename, slp);
 
     rlslp load_slp;
     load_from_file(filename, load_slp);
@@ -1165,7 +1167,7 @@ int main(int argc, char** argv) {
         std::cout << "RLSLP correctly stored and loaded." << std::endl;
     } else {
         std::cerr << "Storing and loading failed." << std::endl;
-    }
+    }*/
 
     return 0;
 }
