@@ -54,6 +54,8 @@ struct rlslp {
     
     // The number of terminals (terminals - 1 is the last production which derives a terminal)
     terminal_count_t terminals = 0;
+    
+    size_t block_count = 0;
 
     std::string to_string() const;
 };

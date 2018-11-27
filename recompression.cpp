@@ -26,6 +26,7 @@
 #include <utility>
 #include <sstream>
 #include <string>
+#include <set>
 
 #include <chrono>
 #include <map>
@@ -180,8 +181,34 @@ struct lceq {
  */
 void replace_letters(text_t &t, rlslp& rlslp, variable_t& alphabet_size, std::vector<variable_t> &mapping) {
     const auto startTime = std::chrono::system_clock::now();
-    std::map<variable_t, variable_t> alpha;
+    // std::map<variable_t, variable_t> alpha;
+    std::vector<bool> alpha(256, false);
     for (size_t i = 0; i < t.size(); ++i) {
+        alpha[t[i]] = true;
+    }
+    
+    std::vector<size_t> count(256, 0);
+    
+    bool first = true;
+    for (size_t i = 0; i < alpha.size(); ++i) {
+        if (alpha[i]) {
+            alphabet_size++;
+            rlslp.non_terminals.emplace_back(i, 1);
+            
+            if (i > 0 && !first) {
+                count[i] = count[i-1] + 1;
+            } else if (first) {
+                first = false;
+            }
+            mapping.emplace_back(count[i]);
+        } else {
+            if (i > 0) {
+                count[i] = count[i-1];
+            }
+        }
+    }
+    
+    /*for (size_t i = 0; i < t.size(); ++i) {
         alpha[t[i]] = 0;
     }
 
@@ -190,18 +217,40 @@ void replace_letters(text_t &t, rlslp& rlslp, variable_t& alphabet_size, std::ve
         mapping.emplace_back(i);
         a.second = i++;
         rlslp.non_terminals.emplace_back(a.first, 1);
-    }
+    }*/
+    
+//    std::cout << "Mapping: ";
+//    for (const auto& m : mapping) {
+//        std::cout << m << " ";
+//    }
+//    std::cout << std::endl;
 
     /*rlslp.blocks.resize(alpha.size());
     for (size_t j = 0; j < rlslp.blocks.size(); ++j) {
         rlslp.blocks[j] = false;
     }*/
-    alphabet_size = alpha.size();
+    
+    // alphabet_size = alpha.size();
     rlslp.terminals = alphabet_size;
+    
+    std::cout << "Alphabet size: " << alphabet_size << std::endl;
 
     for (size_t i = 0; i < t.size(); ++i) {
-        t[i] = alpha[t[i]];
+        // t[i] = alpha[t[i]];
+        t[i] = count[t[i]];
     }
+    
+//    std::cout << "Text: ";
+//    for (const auto& c : t) {
+//        std::cout << c;
+//    }
+//    std::cout << std::endl;
+    
+//    for (const auto& term : rlslp.non_terminals) {
+//        std::cout << term.production[0] << " ";
+//    }
+//    std::cout << std::endl;
+    
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
     std::cout << "Time for replace letters: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
@@ -264,6 +313,7 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
             for (auto& block : blocks[i]) {
                 block.second = alphabet_size++;
                 block_count++;
+                rlslp.block_count++;
                 rlslp.non_terminals.emplace_back(mapping[i], -block.first, rlslp.non_terminals[mapping[i]].len * block.first);
                 mapping.emplace_back(next_nt++);
             }
@@ -302,11 +352,28 @@ void bcomp(text_t& t, rlslp& rlslp, size_t& text_size, variable_t& alphabet_size
  * @param t[in] The text
  * @return The multiset
  */
-inline void compute_multiset(const text_t& t, size_t& text_size, std::map<std::pair<variable_t, variable_t>, std::pair<size_t, size_t>>& multiset) {
+inline void compute_multiset(const text_t& t, size_t& text_size, std::vector<std::map<variable_t, std::pair<size_t, size_t>>>& multiset) {
     const auto startTime = std::chrono::system_clock::now();
     // Compute adjacency graph of the symbols in the current text
     for (size_t i = 1; i < text_size; ++i) {
-        std::pair<variable_t, variable_t> adj;
+        if (t[i-1] > t[i]) {
+            auto found = multiset[t[i-1]].find(t[i]);
+            if (found == multiset[t[i-1]].end()) {
+                multiset[t[i-1]][t[i]].first = 1;
+                multiset[t[i-1]][t[i]].second = 0;
+            } else {
+                multiset[t[i-1]][t[i]].first++;
+            }
+        } else {
+            auto found = multiset[t[i]].find(t[i-1]);
+            if (found == multiset[t[i]].end()) {
+                multiset[t[i]][t[i-1]].first = 0;
+                multiset[t[i]][t[i-1]].second = 1;
+            } else {
+                multiset[t[i]][t[i-1]].second++;
+            }
+        }
+        /*std::pair<variable_t, variable_t> adj;
         if (t[i-1] > t[i]) {
             adj.first = t[i-1];
             adj.second = t[i];
@@ -329,8 +396,15 @@ inline void compute_multiset(const text_t& t, size_t& text_size, std::map<std::p
             } else {
                 (*found).second.second += 1;
             }
-        }
+        }*/
     }
+    
+    /*std::cout << "Multiset: " << std::endl;
+    for (size_t i = 0; i < multiset.size(); ++i) {
+        for (const auto& sec : multiset[i]) {
+            std::cout << i << "," << sec.first << ": " << sec.second.first << "," << sec.second.second << std::endl;
+        }
+    }*/
 
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
@@ -345,13 +419,35 @@ inline void compute_multiset(const text_t& t, size_t& text_size, std::map<std::p
  *
  * @return The partition of the symbols in the alphabet to maximize the number of pairs to be compressed
  */
-inline void compute_partition(const std::map<std::pair<variable_t, variable_t>, std::pair<size_t, size_t>>& multiset, std::vector<bool>& partition, const variable_t& alphabet_size) {
+inline void compute_partition(const std::vector<std::map<variable_t, std::pair<size_t, size_t>>>& multiset, std::vector<bool>& partition, const variable_t& alphabet_size) {
     const auto startTime = std::chrono::system_clock::now();
     //int lr_count = 0;
     //int rl_count = 0;
     variable_t c = 0;
     int left = 0, right = 0;
-    for (const auto& adj : multiset) {
+    for (size_t i = 0; i < multiset.size(); ++i) {
+        while (c < alphabet_size && i > c) {
+            partition[c] = left > right;
+            c++;
+            left = 0;
+            right = 0;
+        }
+        for (const auto& sec : multiset[i]) {
+            if (partition[sec.first]) {
+                right += sec.second.first + sec.second.second;
+            } else {
+                left += sec.second.first + sec.second.second;
+            }
+        }
+    }
+    
+    while (c < alphabet_size) {
+        partition[c] = left > right;
+        c++;
+        left = 0;
+        right = 0;
+    }
+    /*for (const auto& adj : multiset) {
         auto first = adj.first;
         while (c < alphabet_size && first.first > c) {
             partition[c] = left > right;
@@ -371,12 +467,14 @@ inline void compute_partition(const std::map<std::pair<variable_t, variable_t>, 
         c++;
         left = 0;
         right = 0;
-    }
-    
-    /*if (rl_count > lr_count) {
-        partition.flip();
     }*/
-
+    
+    /*std::cout << "Partition: " << std::endl;
+    for (size_t i = 0; i < partition.size(); ++i) {
+        std::cout << partition[i];
+    }
+    std::cout << std::endl;*/
+    
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
     std::cout << "Time for computing partition: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
@@ -393,11 +491,22 @@ inline void compute_partition(const std::map<std::pair<variable_t, variable_t>, 
  * @param multiset[in] Multiset representing the adjacency graph of the text
  * @param partition[in,out] The partition of the letters in the current alphabet represented by a bitvector
  */
-inline void count_pairs(const std::map<std::pair<variable_t, variable_t>, std::pair<size_t, size_t>>& multiset, std::vector<bool>& partition) {
+inline void count_pairs(const std::vector<std::map<variable_t, std::pair<size_t, size_t>>>& multiset, std::vector<bool>& partition) {
     const auto startTime = std::chrono::system_clock::now();
     int lr_count = 0;
     int rl_count = 0;
-    for (const auto &adj : multiset) {
+    for (size_t i = 0; i < multiset.size(); ++i) {
+        for (const auto& sec : multiset[i]) {
+            if (!partition[i] && partition[sec.first]) {
+                lr_count += sec.second.first;
+                rl_count += sec.second.second;
+            } else {
+                rl_count += sec.second.first;
+                lr_count += sec.second.second;
+            }
+        }
+    }
+    /*for (const auto &adj : multiset) {
         if (!partition[adj.first.first] && partition[adj.first.second]) {  // (c,b,0) -> cb in text
             lr_count += adj.second.first;
             rl_count += adj.second.second;
@@ -405,12 +514,19 @@ inline void count_pairs(const std::map<std::pair<variable_t, variable_t>, std::p
             rl_count += adj.second.first;
             lr_count += adj.second.second;
         }
-    }
+    }*/
 
     // If there are more pairs in the current text from right set to left set swap partition sets
     if (rl_count > lr_count) {
         partition.flip();
     }
+    
+    /*std::cout << "Partition after count pairs: " << std::endl;
+    for (size_t i = 0; i < partition.size(); ++i) {
+        std::cout << partition[i];
+    }
+    std::cout << std::endl;*/
+    
     const auto endTime = std::chrono::system_clock::now();
     const auto timeSpan = endTime - startTime;
     std::cout << "Time for count pairs: " << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
@@ -440,7 +556,7 @@ inline void count_pairs(const std::map<std::pair<variable_t, variable_t>, std::p
  */
 inline void partition(const text_t& t, size_t& text_size, const variable_t& alphabet_size, std::vector<bool>& partition) {
     const auto startTime = std::chrono::system_clock::now();
-    std::map<std::pair<variable_t, variable_t>, std::pair<size_t, size_t>> multiset;
+    std::vector<std::map<variable_t, std::pair<size_t, size_t>>> multiset(alphabet_size);
     compute_multiset(t, text_size, multiset);
 
     compute_partition(multiset, partition, alphabet_size);
@@ -1157,6 +1273,176 @@ int main(int argc, char** argv) {
             std::cerr << "Decompression failed." << std::endl;
         }
     }
+    
+    auto f_last = 0;
+    auto sec_p_last = 0;
+    auto sec_b_last = 0;
+    
+    std::set<lce::variable_t> set;
+    std::set<lce::variable_t> delta_set;
+    
+    std::vector<lce::variable_t> first(slp.non_terminals.size());
+    auto pair_count = slp.non_terminals.size() - slp.block_count;
+    std::vector<lce::variable_t> sec_pairs;
+    sec_pairs.reserve(pair_count);
+    std::vector<lce::variable_t> sec_blocks;
+    sec_blocks.reserve(slp.block_count);
+
+    for (size_t i = 0; i < slp.non_terminals.size(); ++i) {
+        auto v = slp.non_terminals[i].production[0];
+        set.emplace(v);
+        first[i] = v - f_last;
+        delta_set.emplace(first[i]);
+        f_last = v;
+        // counts[first[i]] = 0;
+        auto sec = slp.non_terminals[i].production[1];
+        if (sec < 0 && i >= slp.terminals) {
+            sec_blocks.emplace_back(-sec - sec_b_last);
+            delta_set.emplace(-sec - sec_b_last);
+            sec_b_last = -sec;
+            // counts[enc] = 0;
+        } else if (i >= slp.terminals) {
+            sec_pairs.emplace_back(sec - sec_p_last);
+            delta_set.emplace(sec - sec_p_last);
+            sec_p_last = sec;
+            // counts[enc] = 0;
+        }
+        set.emplace(sec);
+    }
+    
+    std::cout << "Different symbols: " << set.size() << std::endl;
+    std::cout << "Different symbols (delta): " << delta_set.size() << std::endl;
+    
+
+    // std::unordered_map<variable_t, size_t> counts;
+
+    /*for (size_t j = 0; j < 3; ++j) {
+        f_last = 0;
+        sec_p_last = 0;
+        sec_b_last = 0;
+        
+        set.clear();
+        delta_set.clear();
+        
+        for (size_t i = 0; i < slp.non_terminals.size(); ++i) {
+            auto v = first[i];
+            set.emplace(v);
+            first[i] = v - f_last;
+            delta_set.emplace(v - f_last);
+            f_last = v;
+            // counts[first[i]] = 0;
+        }
+        
+        for (size_t i = 0; i < sec_blocks.size(); ++i) {
+            auto sec = sec_blocks[i];
+            set.emplace(sec);
+            sec_blocks[i] = -sec - sec_b_last;
+            delta_set.emplace(sec - sec_b_last);
+            sec_b_last = sec;
+        }
+        
+        for (size_t i = 0; i < sec_pairs.size(); ++i) {
+            auto sec = sec_pairs[i];
+            set.emplace(sec);
+            sec_pairs[i] = -sec - sec_p_last;
+            delta_set.emplace(sec - sec_p_last);
+            sec_p_last = sec;
+        }
+        
+        std::cout << "Different symbols: " << set.size() << std::endl;
+        std::cout << "Different symbols (delta): " << delta_set.size() << std::endl;
+    }*/
+    
+    if (slp.non_terminals.size() <= 50) {
+        if (first.size() == 0) {
+            std::cout << "first: []" << std::endl;
+        } else {
+            std::stringstream sstream;
+            sstream << "first: [";
+            for (size_t i = 0; i < slp.non_terminals.size() - 1; ++i) {
+                sstream << slp.non_terminals[i].production[0] << ", ";
+            }
+            sstream << slp.non_terminals[slp.non_terminals.size() - 1].production[0] << "]";
+            std::cout << sstream.str() << std::endl;
+        }
+        
+        if (first.size() == 0) {
+            std::cout << "first (delta): []" << std::endl;
+        } else {
+            std::stringstream sstream;
+            sstream << "first (delta): [";
+            for (size_t i = 0; i < first.size() - 1; ++i) {
+                sstream << first[i] << ", ";
+            }
+            sstream << first[first.size() - 1] << "]";
+            std::cout << sstream.str() << std::endl;
+        }
+        
+        if (first.size() == 0) {
+            std::cout << "sec_blocks: []" << std::endl;
+        } else {
+            std::stringstream sstream;
+            sstream << "sec_blocks: [";
+            for (size_t i = 0; i < slp.non_terminals.size() - 1; ++i) {
+                auto sec = slp.non_terminals[i].production[1];
+                if (sec < 0 && i >= slp.terminals) {
+                    sstream << slp.non_terminals[i].production[1] << ", ";
+                }
+            }
+            auto sec = slp.non_terminals[slp.non_terminals.size() - 1].production[1];
+            if (sec < 0 && slp.non_terminals.size() - 1 >= slp.terminals) {
+                sstream << slp.non_terminals[slp.non_terminals.size() - 1].production[1];
+            }
+            sstream << "]";
+            std::cout << sstream.str() << std::endl;
+        }
+        
+        if (sec_blocks.size() == 0) {
+            std::cout << "sec_blocks (delta): []" << std::endl;
+        } else {
+            std::stringstream sstream;
+            sstream << "sec_blocks (delta): [";
+            for (size_t i = 0; i < sec_blocks.size() - 1; ++i) {
+                sstream << sec_blocks[i] << ", ";
+            }
+            sstream << sec_blocks[sec_blocks.size() - 1] << "]";
+            std::cout << sstream.str() << std::endl;
+        }
+        
+        if (first.size() == 0) {
+            std::cout << "sec_pairs: []" << std::endl;
+        } else {
+            std::stringstream sstream;
+            sstream << "sec_pairs: [";
+            for (size_t i = 0; i < slp.non_terminals.size() - 1; ++i) {
+                auto sec = slp.non_terminals[i].production[1];
+                if (sec >= 0 && i >= slp.terminals) {
+                    sstream << slp.non_terminals[i].production[1] << ", ";
+                }
+            }
+            auto sec = slp.non_terminals[slp.non_terminals.size() - 1].production[1];
+            if (sec >= 0 && slp.non_terminals.size() - 1 >= slp.terminals) {
+                sstream << slp.non_terminals[slp.non_terminals.size() - 1].production[1];
+            }
+            sstream << "]";
+            std::cout << sstream.str() << std::endl;
+        }
+        
+        if (sec_pairs.size() == 0) {
+            std::cout << "sec_pairs (delta): []" << std::endl;
+        } else {
+            std::stringstream sstream;
+            sstream << "sec_pairs (delta): [";
+            for (size_t i = 0; i < sec_pairs.size() - 1; ++i) {
+                sstream << sec_pairs[i] << ", ";
+            }
+            sstream << sec_pairs[sec_pairs.size() - 1] << "]";
+            std::cout << sstream.str() << std::endl;
+        }
+    }
+    
+//    std::cout << "Different symbols: " << set.size() << std::endl;
+//    std::cout << "Different symbols (delta): " << delta_set.size() << std::endl;
 
     /*write_to_file(filename, slp);
 
